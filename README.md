@@ -6,8 +6,8 @@ This is a clean rebuild of the ideas from the community `mi-fitness-mcp` project
 affiliated with Xiaomi. It reads **your own** health data from the Xiaomi cloud and stores it in a
 local SQLite database for analysis by agents.
 
-> Status: early development. The data plane (Xiaomi login → SQLite → REST/MCP) is the first
-> milestone; the admin UI and QR login are being built on top of it.
+> Status: data plane + admin UI implemented. REST/MCP serve the same query layer; the React admin
+> console covers login, overview, charts, keys, sync status and QR login.
 
 ## What it does
 
@@ -45,18 +45,37 @@ pip install -e '.[dev]'
 python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
 export MI_HEALTH_MASTER_KEY='...'
 
-# 2. Store your Xiaomi userId/passToken (region cn by default)
+# 2. Admin login + session secret (hash is Argon2id; prompt is interactive)
+export MI_HEALTH_ADMIN_PASSWORD_HASH="$(mi-health admin hash-password)"
+export MI_HEALTH_SESSION_SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+
+# 3. Store your Xiaomi userId/passToken, or use the admin UI QR login
 mi-health set-credentials --user-id "<userId>" --pass-token "<passToken>" --region cn
 
-# 3. Create a read-only agent key (shown once)
+# 4. Create a read-only agent key (shown once)
 mi-health key create --label agent --scopes read
 
-# 4. Run API and worker (separate processes)
+# 5. Run API and worker (separate processes)
 mi-health serve-api --host 127.0.0.1 --port 8330
 mi-health serve-worker
 ```
 
+Open `http://127.0.0.1:8330/` for the admin console. It uses a session cookie, not an agent API key.
+The bottom of the overview shows whether data is stale; use **同步** for an on-demand refresh and
+**扫码登录** to authorize Xiaomi.
+
 MCP client URL: `http://127.0.0.1:8330/mcp/` with `Authorization: Bearer mhk_...` (the mounted Streamable HTTP endpoint redirects `/mcp` to `/mcp/`).
+
+Frontend development/build:
+
+```bash
+cd web
+bun install
+bun run typecheck
+bun run build          # -> web/dist
+# run the API with the built UI
+MI_HEALTH_WEB_DIR=web/dist mi-health serve-api --host 127.0.0.1 --port 8330
+```
 REST example:
 
 ```bash
@@ -74,7 +93,7 @@ mi-health key create --label agent --scopes read   # from inside the container o
 
 The example binds `127.0.0.1:8330` on the host; expose it through a TLS reverse proxy and set
 `MI_HEALTH_ALLOWED_HOSTS` to the public host, otherwise MCP's DNS-rebinding protection rejects the
-Host header.
+Host header. Set `MI_HEALTH_HTTPS_ONLY=1` so the session cookie gets the Secure flag.
 
 ## Data notes
 
