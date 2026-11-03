@@ -76,6 +76,9 @@ class Worker:
         return True
 
     def run_forever(self, poll_seconds: int = 30) -> None:
+        recovered = self.db.reset_running_jobs()
+        if recovered:
+            logger.warning("requeued %s orphaned sync job(s) from a previous worker", recovered)
         logger.info("sync worker started (poll=%ss)", poll_seconds)
         while True:
             try:

@@ -29,6 +29,16 @@ class FakeClient:
         )
 
 
+def test_worker_requeues_orphaned_jobs(ctx):
+    _, db, _ = ctx
+    job_id = db.enqueue_job("u1", "daily_activity", None, None)
+    with db._connect() as conn:
+        conn.execute("UPDATE sync_jobs SET status='running' WHERE id=?", (job_id,))
+        conn.commit()
+    assert db.reset_running_jobs() == 1
+    assert db.get_job(job_id)["status"] == "pending"
+
+
 @pytest.mark.asyncio
 async def test_sync_type_batches_and_updates_state(ctx, monkeypatch):
     settings, db, store = ctx

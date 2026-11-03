@@ -654,6 +654,19 @@ class Database:
                 (status, datetime.now(UTC).isoformat(), error, job_id),
             )
 
+    def reset_running_jobs(self) -> int:
+        """Requeue jobs left running by a worker restart (single-worker design)."""
+        with self._write() as conn:
+            conn.execute(
+                "UPDATE sync_runs SET status='error', finished_at=?, error='worker restarted' "
+                "WHERE status='running'",
+                (datetime.now(UTC).isoformat(),),
+            )
+            cur = conn.execute(
+                "UPDATE sync_jobs SET status='pending', started_at=NULL WHERE status='running'"
+            )
+            return cur.rowcount
+
     def get_job(self, job_id: str) -> dict[str, Any] | None:
         with self._connect() as conn:
             row = conn.execute("SELECT * FROM sync_jobs WHERE id=?", (job_id,)).fetchone()
