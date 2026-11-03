@@ -30,6 +30,8 @@ class Settings:
     session_secret: str | None
     log_level: str
     allowed_hosts: list[str]
+    https_only: bool = False
+    web_dir: Path = Path("web/dist")
 
     @classmethod
     def from_env(cls, **overrides: object) -> Settings:
@@ -50,6 +52,8 @@ class Settings:
             "session_secret": os.environ.get("MI_HEALTH_SESSION_SECRET"),
             "log_level": os.environ.get("MI_HEALTH_LOG_LEVEL", "INFO"),
             "allowed_hosts": [h.strip() for h in os.environ.get("MI_HEALTH_ALLOWED_HOSTS", "127.0.0.1,127.0.0.1:*,localhost,localhost:*").split(",") if h.strip()],
+            "https_only": os.environ.get("MI_HEALTH_HTTPS_ONLY", "0").lower() in ("1", "true", "yes"),
+            "web_dir": Path(os.environ.get("MI_HEALTH_WEB_DIR", "web/dist")),
         }
         values.update(overrides)
         return cls(**values)  # type: ignore[arg-type]

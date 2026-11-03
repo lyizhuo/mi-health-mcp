@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import json
 import logging
 import sys
@@ -71,6 +72,17 @@ def cmd_sync(args) -> int:
     return 0 if result.get("status") == "ok" else 1
 
 
+def cmd_admin_hash(args) -> int:
+    from argon2 import PasswordHasher
+
+    password = getpass.getpass("Admin password: ")
+    if password != getpass.getpass("Confirm: "):
+        print("passwords do not match", file=sys.stderr)
+        return 1
+    print(PasswordHasher().hash(password))
+    return 0
+
+
 def cmd_status(args) -> int:
     settings, db, store = _context()
     service = QueryService(db, store, settings)
@@ -134,6 +146,11 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("status", help="print local sync status")
     p.set_defaults(func=cmd_status)
 
+    admin = sub.add_parser("admin", help="admin helpers")
+    admin_sub = admin.add_subparsers(dest="admin_command", required=True)
+    p = admin_sub.add_parser("hash-password", help="print an Argon2id hash for MI_HEALTH_ADMIN_PASSWORD_HASH")
+    p.set_defaults(func=cmd_admin_hash)
+
     p = sub.add_parser("serve-api", help="run REST + MCP server")
     p.add_argument("--host")
     p.add_argument("--port", type=int)
@@ -152,3 +169,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

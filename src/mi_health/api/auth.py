@@ -99,6 +99,24 @@ def require_scope(scope: str):
     return dependency
 
 
+async def require_read_access(request: Request):
+    """Allow an admin session (UI) or an API key with read scope (agents)."""
+    if request.session.get("admin"):
+        return None
+    return await require_scope("read")(request)
+
+
+async def require_sync_access(request: Request):
+    """Allow an admin session with CSRF, or an API key with sync scope."""
+    if request.session.get("admin"):
+        token = request.headers.get("x-csrf-token", "")
+        expected = str(request.session.get("csrf", ""))
+        if not token or not expected or not secrets.compare_digest(token, expected):
+            raise HTTPException(status_code=403, detail="invalid CSRF token")
+        return None
+    return await require_scope("sync")(request)
+
+
 def require_current_scope(scope: str) -> AuthContext:
     ctx = current_auth.get()
     if not ctx:
