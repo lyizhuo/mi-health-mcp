@@ -1,0 +1,15 @@
+services:
+  mi-health:
+    image: ghcr.io/lyizhuo/mi-health-mcp:latest
+    build: .
+    container_name: mi-health
+    ports:
+      # Bind to loopback only; the reverse proxy is the public entrypoint.
+      - "127.0.0.1:8330:8330"
+    volumes:
+      - mi-health-data:/data
+    env_file: .env
+    restart: unless-stopped
+
+volumes:
+  mi-health-data:
