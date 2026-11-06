@@ -69,6 +69,14 @@ class Worker:
                 job.get("end_date"),
                 bool(job.get("force")),
             )
+            logger.info(
+                "sync %s %s: %s record(s) (%s..%s)",
+                job["data_type"],
+                result["status"],
+                result.get("records", 0),
+                result.get("start_date"),
+                result.get("end_date"),
+            )
             self.db.finish_job(job["id"], status=result["status"], error=result.get("error"))
         except Exception as exc:  # noqa: BLE001 - job must not kill the worker
             logger.exception("job %s failed", job["id"])

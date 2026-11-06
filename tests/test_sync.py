@@ -1,9 +1,10 @@
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from mi_health.models import DailyActivity
 from mi_health.sync.service import SyncService
+from mi_health.sync.worker import Worker
 
 
 class FakeClient:
@@ -27,6 +28,40 @@ class FakeClient:
             active_kcal=50,
             collected_at=datetime(2026, 11, 3, 12, 0),
         )
+
+
+def test_sleep_uses_high_frequency_interval(ctx):
+    settings, _, _ = ctx
+    assert settings.interval_for("sleep") == settings.high_interval
+
+
+def test_scheduler_polls_sleep_every_high_interval(ctx):
+    settings, db, store = ctx
+    worker = Worker(db, store, settings)
+
+    def sleep_jobs() -> int:
+        with db._connect() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM sync_jobs WHERE data_type='sleep'"
+            ).fetchone()
+        return int(row[0])
+
+    def mark_synced(minutes_ago: int) -> None:
+        synced_at = datetime.now(UTC) - timedelta(minutes=minutes_ago)
+        with db._write() as conn:
+            conn.execute(
+                "INSERT INTO sync_state(user_id,data_type,last_synced_at,status) VALUES (?,?,?,?) "
+                "ON CONFLICT(user_id,data_type) DO UPDATE SET last_synced_at=excluded.last_synced_at",
+                ("u1", "sleep", synced_at.isoformat(), "ok"),
+            )
+
+    mark_synced(29)
+    worker._schedule_due()
+    assert sleep_jobs() == 0
+
+    mark_synced(31)
+    worker._schedule_due()
+    assert sleep_jobs() == 1
 
 
 def test_worker_requeues_orphaned_jobs(ctx):

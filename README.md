@@ -11,8 +11,8 @@ local SQLite database for analysis by agents.
 
 ## What it does
 
-- Syncs Xiaomi Mi Fitness cloud data on a schedule (steps/HR/SpO2/stress every 30 minutes, sleep
-  every 2 hours, workouts/body every 12 hours by default).
+- Syncs Xiaomi Mi Fitness cloud data on a schedule (steps/HR/SpO2/stress/sleep every 30 minutes,
+  workouts/body every 12 hours by default).
 - Stores data in SQLite with WAL and batched transactions.
 - Serves the same query layer through:
   - REST `/api/*`

@@ -24,7 +24,6 @@ class Settings:
     backfill_days: int
     raw_retention_days: int
     high_interval: int
-    sleep_interval: int
     other_interval: int
     admin_password_hash: str | None
     session_secret: str | None
@@ -46,7 +45,6 @@ class Settings:
             "backfill_days": int(os.environ.get("MI_HEALTH_BACKFILL_DAYS", "90")),
             "raw_retention_days": int(os.environ.get("MI_HEALTH_RAW_RETENTION_DAYS", "180")),
             "high_interval": int(os.environ.get("MI_HEALTH_SYNC_HIGH_INTERVAL", "1800")),
-            "sleep_interval": int(os.environ.get("MI_HEALTH_SYNC_SLEEP_INTERVAL", "7200")),
             "other_interval": int(os.environ.get("MI_HEALTH_SYNC_OTHER_INTERVAL", "43200")),
             "admin_password_hash": os.environ.get("MI_HEALTH_ADMIN_PASSWORD_HASH"),
             "session_secret": os.environ.get("MI_HEALTH_SESSION_SECRET"),
@@ -59,10 +57,8 @@ class Settings:
         return cls(**values)  # type: ignore[arg-type]
 
     def interval_for(self, data_type: str) -> int:
-        if data_type in {"daily_activity", "heart_rate", "spo2", "stress", "abnormal_heart_beat"}:
+        if data_type in {"daily_activity", "sleep", "heart_rate", "spo2", "stress", "abnormal_heart_beat"}:
             return self.high_interval
-        if data_type == "sleep":
-            return self.sleep_interval
         return self.other_interval
 
     def ensure_data_dir(self) -> None:

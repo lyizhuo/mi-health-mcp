@@ -24,7 +24,6 @@ def ctx(tmp_path: Path):
         backfill_days=90,
         raw_retention_days=180,
         high_interval=1800,
-        sleep_interval=7200,
         other_interval=43200,
         admin_password_hash=PasswordHasher().hash("secret"),
         session_secret="test-session-secret",

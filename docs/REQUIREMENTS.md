@@ -25,7 +25,7 @@ analysis. The UI is a low-frequency admin/observability surface, not an analysis
 | Area | Decision |
 | --- | --- |
 | Source of truth | Xiaomi cloud; local SQLite cache |
-| Freshness | high-frequency 30 min, sleep 2 h, other 12 h; stale = 2× interval |
+| Freshness | high-frequency 30 min (incl. sleep), other 12 h; stale = 2× interval |
 | Scope | single user |
 | Backend | Python + FastAPI + official MCP SDK |
 | Topology | one container, `api` + `worker` processes, shared SQLite WAL |
@@ -46,7 +46,7 @@ analysis. The UI is a low-frequency admin/observability surface, not an analysis
 
 1. Agent end-to-end: public `/mcp` + `/api` with a read key can query 90 days; MCP tools list/call;
    `meta` contains `data_as_of`, `last_synced_at`, `stale`.
-2. Sync/freshness: 30 min / 2 h / 12 h cadence; backoff; auth-failure state; stale consistent in
+2. Sync/freshness: 30 min / 12 h cadence; backoff; auth-failure state; stale consistent in
    API and UI.
 3. Backfill/retention/recovery: 90-day backfill resumes after interruption; 180-day raw retention;
    API stays available during backfill.
